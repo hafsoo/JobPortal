@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6
+    container_name: jobportal-mongo
+    restart: always
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - jobportal-network
+
+  backend:
+    build: ./backend
+    container_name: jobportal-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongodb:27017/jobportal
+      - JWT_SECRET=7fK9@pQ2xLm8#vR5zT1nW6uY!aB3cD9eJ$N4sH
+      - FRONTEND_URL=http://localhost   # ✅ CORS fix
+    volumes:
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      - mongodb
+    networks:
+      - jobportal-network
+
+  frontend:
+    build:
+      context: ./frontend/client
+      args:
+        - VITE_API_URL=/api             # ✅ Build time env variable
+    container_name: jobportal-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - jobportal-network
+
+volumes:
+  mongo-data:
+
+networks:
+  jobportal-network:
+    driver: bridge
